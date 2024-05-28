@@ -19,7 +19,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="property-group-container">
   {#if name}
-    <div class="property-group-name" on:click={onHeaderClick}>
+    <div class="property-group-name" class:collapsible on:click={onHeaderClick}>
       <div class="name">{name}</div>
       {#if collapsible}
         <Icon size="S" name={show ? "Remove" : "Add"} />
@@ -47,7 +47,6 @@
     border-bottom: 0px;
   }
   .property-group-name {
-    cursor: pointer;
     display: flex;
     flex-flow: row nowrap;
     flex-direction: row;
@@ -57,7 +56,10 @@
     color: var(--spectrum-global-color-gray-600);
     transition: color 130ms ease-in-out;
   }
-  .property-group-name:hover {
+  .collapsible {
+    cursor: pointer;
+  }
+  .collapsible.property-group-name:hover {
     color: var(--spectrum-global-color-gray-900);
   }
 
