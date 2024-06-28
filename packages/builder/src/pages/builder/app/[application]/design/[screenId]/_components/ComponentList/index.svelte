@@ -15,6 +15,8 @@
   import DNDPositionIndicator from "./DNDPositionIndicator.svelte"
   import ComponentKeyHandler from "./ComponentKeyHandler.svelte"
   import ComponentScrollWrapper from "./ComponentScrollWrapper.svelte"
+  import getScreenContextMenuItems from './getScreenContextMenuItems'
+  import { contextMenuStore } from "stores/builder/contextMenu.js"
 
   let scrolling = false
 
@@ -43,6 +45,14 @@
   }
 
   const hover = hoverStore.hover
+
+  const openScreenContextMenu = (e, screenComponent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const items = getScreenContextMenuItems(screenComponent)
+    contextMenuStore.open(items, { x: e.clientX, y: e.clientY})
+  }
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -57,7 +67,9 @@
   <div class="list-panel">
     <ComponentScrollWrapper on:scroll={handleScroll}>
       <ul>
-        <li>
+        <li
+            on:contextmenu={(e) => openScreenContextMenu(e, $selectedScreen?.props)}
+          >
           <NavItem
             text="Screen"
             indentLevel={0}
@@ -76,8 +88,12 @@
             id="component-screen"
             selectedBy={$userSelectedResourceMap[screenComponentId]}
           >
-            <ScreenslotDropdownMenu component={$selectedScreen?.props} />
+            <Icon size="S" hoverable name="MoreSmallList" 
+              on:click={(e) => openScreenContextMenu(e, $selectedScreen?.props)}
+              />
           </NavItem>
+        </li>
+        <li>
           <NavItem
             text="Navigation"
             indentLevel={0}

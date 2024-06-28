@@ -1,6 +1,13 @@
 <script>
-  import { Layout } from "@budibase/bbui"
   import {
+    Layout,
+    Icon,
+    Modal,
+    Helpers,
+    notifications,
+  } from "@budibase/bbui"
+  import {
+    navigationStore,
     screenStore,
     sortedScreens,
     userSelectedResourceMap,
@@ -11,6 +18,13 @@
   import { goto } from "@roxi/routify"
   import { getVerticalResizeActions } from "components/common/resizable"
   import NavHeader from "components/common/NavHeader.svelte"
+  import ScreenDetailsModal from "components/design/ScreenDetailsModal.svelte"
+  import sanitizeUrl from "helpers/sanitizeUrl"
+  import { makeComponentUnique } from "helpers/components"
+  import { capitalise } from "helpers"
+  import ConfirmDialog from "components/common/ConfirmDialog.svelte"
+  import getContextMenuItems from './getContextMenuItems'
+  import { contextMenuStore } from "stores/builder/contextMenu.js"
 
   const [resizable, resizableHandle] = getVerticalResizeActions()
 
@@ -18,6 +32,9 @@
   let searchValue = ""
   let screensContainer
   let scrolling = false
+
+  let screenToDuplicate = null
+  let screenToDelete = null
 
   $: filteredScreens = getFilteredScreens($sortedScreens, searchValue)
 
@@ -40,6 +57,63 @@
   const handleScroll = e => {
     scrolling = e.target.scrollTop !== 0
   }
+
+  let confirmDeleteDialog
+  let screenDetailsModal
+
+  const setScreenToDuplicate = (newScreenToDuplicate) => {
+    screenToDuplicate = newScreenToDuplicate
+    screenDetailsModal.show()
+  }
+
+  const setScreenToDelete = (newScreenToDelete) => {
+    screenToDelete = newScreenToDelete
+    confirmDeleteDialog.show()
+  }
+
+  const createDuplicateScreen = async ({ screenName, screenUrl }) => {
+    // Create a dupe and ensure it is unique
+    let duplicateScreen = Helpers.cloneDeep(screenToDuplicate)
+    delete duplicateScreen._id
+    delete duplicateScreen._rev
+    duplicateScreen.props = makeComponentUnique(duplicateScreen.props)
+
+    // Attach the new name and URL
+    duplicateScreen.routing.route = sanitizeUrl(screenUrl)
+    duplicateScreen.routing.homeScreen = false
+    duplicateScreen.props._instanceName = screenName
+
+    try {
+      // Create the screen
+      await screenStore.save(duplicateScreen)
+
+      // Add new screen to navigation
+      await navigationStore.saveLink(
+        duplicateScreen.routing.route,
+        capitalise(duplicateScreen.routing.route.split("/")[1]),
+        duplicateScreen.routing.roleId
+      )
+    } catch (error) {
+      notifications.error("Error duplicating screen")
+    }
+  }
+
+  const deleteScreen = async () => {
+    try {
+      await screenStore.delete(screenToDelete)
+      notifications.success("Deleted screen successfully")
+    } catch (err) {
+      notifications.error("Error deleting screen")
+    }
+  }
+
+  const openContextMenu = (e, screen) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const items = getContextMenuItems(screen, setScreenToDuplicate, setScreenToDelete)
+    contextMenuStore.open(items, { x: e.clientX, y: e.clientY})
+  }
 </script>
 
 <div class="screens" class:searching use:resizable>
@@ -56,6 +130,7 @@
     {#if filteredScreens?.length}
       {#each filteredScreens as screen (screen._id)}
         <NavItem
+          on:contextmenu={(e) => openContextMenu(e, screen)}
           scrollable
           icon={screen.routing.homeScreen ? "Home" : null}
           indentLevel={0}
@@ -89,6 +164,23 @@
     use:resizableHandle
   />
 </div>
+
+<ConfirmDialog
+  bind:this={confirmDeleteDialog}
+  title="Confirm Deletion"
+  body={"Are you sure you wish to delete this screen?"}
+  okText="Delete screen"
+  onOk={deleteScreen}
+/>
+
+<Modal bind:this={screenDetailsModal}>
+  <ScreenDetailsModal
+    onConfirm={createDuplicateScreen}
+    screenUrl={screenToDuplicate?.routing.route}
+    screenRole={screenToDuplicate?.routing.roleId}
+    confirmText="Duplicate"
+  />
+</Modal>
 
 <style>
   .screens {

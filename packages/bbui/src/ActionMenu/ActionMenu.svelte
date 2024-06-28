@@ -17,9 +17,11 @@
   }
 
   export const hide = () => {
+    console.log("hide");
     dropdown.hide()
   }
   export const show = () => {
+    console.log("showing");
     dropdown.show()
   }
 
