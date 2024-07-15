@@ -17,6 +17,7 @@ import { userStore, userSelectedResourceMap, isOnlyUser } from "./users.js"
 import { deploymentStore } from "./deployments.js"
 import { contextMenuStore } from "./contextMenu.js"
 import { snippets } from "./snippets"
+import { rowActions } from "./rowActions"
 
 // Backend
 import { tables } from "./tables"
@@ -65,6 +66,7 @@ export {
   flags,
   hoverStore,
   snippets,
+  rowActions,
 }
 
 export const reset = () => {
