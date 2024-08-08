@@ -13,11 +13,17 @@ export const removeInvalidFilters = (
       continue
     }
     if (isLogicalSearchOperator(filterKey)) {
-      for (let i = 0; i < result[filterKey].conditions.length; i++) {
-        result[filterKey].conditions[i] = removeInvalidFilters(
-          result[filterKey].conditions[i],
-          validFields
-        )
+      const resultingConditions = []
+      for (const condition of result[filterKey].conditions) {
+        const resultingCondition = removeInvalidFilters(condition, validFields)
+        if (Object.keys(resultingCondition).length) {
+          resultingConditions.push(resultingCondition)
+        }
+      }
+      if (resultingConditions.length) {
+        result[filterKey].conditions = resultingConditions
+      } else {
+        delete result[filterKey]
       }
       continue
     }
@@ -29,6 +35,9 @@ export const removeInvalidFilters = (
       ) {
         delete filter[columnKey]
       }
+    }
+    if (!Object.keys(filter).length) {
+      delete result[filterKey]
     }
   }
 

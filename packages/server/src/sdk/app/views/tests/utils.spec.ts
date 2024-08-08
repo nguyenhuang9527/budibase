@@ -25,6 +25,7 @@ describe("view utils", () => {
         conditions: [{ equal: { one: "foo2" }, notEmpty: { one: null } }],
       },
     }
+
     it("can filter empty queries", () => {
       const filters: SearchFilters = {}
       const result = removeInvalidFilters(filters, [])
@@ -69,6 +70,27 @@ describe("view utils", () => {
           conditions: [{ equal: { one: "foo2" }, notEmpty: { one: null } }],
         },
       })
+    })
+
+    it("trims invalid field keeping a valid fields", () => {
+      const result = removeInvalidFilters(fullFilters, ["three", "forth"])
+      const expected: SearchFilters = {
+        $or: {
+          conditions: [
+            {
+              $and: {
+                conditions: [
+                  {
+                    equal: { three: "baz" },
+                    notEmpty: { forth: null },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      }
+      expect(result).toEqual(expected)
     })
   })
 })
