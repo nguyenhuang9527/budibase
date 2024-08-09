@@ -1,4 +1,4 @@
-import { Datasource, FieldType, Row, Table } from "@budibase/types"
+import { Datasource, FieldType, Table } from "@budibase/types"
 
 import TestConfiguration from "../../../../../tests/utilities/TestConfiguration"
 import { search } from "../../../../../sdk/app/rows/search"
@@ -28,7 +28,6 @@ describe.each([
   let envCleanup: (() => void) | undefined
   let datasource: Datasource | undefined
   let table: Table
-  let rows: Row[]
 
   beforeAll(async () => {
     await config.withCoreEnv(
@@ -48,7 +47,9 @@ describe.each([
         datasource: await dsProvider,
       })
     }
+  })
 
+  beforeEach(async () => {
     table = await config.api.table.save(
       tableForDatasource(datasource, {
         primary: ["id"],
@@ -78,16 +79,13 @@ describe.each([
       })
     )
 
-    rows = []
     for (let i = 0; i < 10; i++) {
-      rows.push(
-        await config.api.row.save(table._id!, {
-          name: generator.first(),
-          surname: generator.last(),
-          age: generator.age(),
-          address: generator.address(),
-        })
-      )
+      await config.api.row.save(table._id!, {
+        name: generator.first(),
+        surname: generator.last(),
+        age: generator.age(),
+        address: generator.address(),
+      })
     }
   })
 
@@ -135,4 +133,67 @@ describe.each([
         )
       })
     })
+
+  it("does not allow accessing hidden fields", async () => {
+    await config.doInContext(config.appId, async () => {
+      await config.api.table.save({
+        ...table,
+        schema: {
+          ...table.schema,
+          name: {
+            ...table.schema.name,
+            visible: true,
+          },
+          age: {
+            ...table.schema.age,
+            visible: false,
+          },
+        },
+      })
+      const result = await search({
+        tableId: table._id!,
+        query: {},
+      })
+      expect(result.rows).toHaveLength(10)
+      for (const row of result.rows) {
+        const keys = Object.keys(row)
+        expect(keys).toContain("name")
+        expect(keys).toContain("surname")
+        expect(keys).toContain("address")
+        expect(keys).not.toContain("age")
+      }
+    })
+  })
+
+  it("does not allow accessing hidden fields even if requested", async () => {
+    await config.doInContext(config.appId, async () => {
+      await config.api.table.save({
+        ...table,
+        schema: {
+          ...table.schema,
+          name: {
+            ...table.schema.name,
+            visible: true,
+          },
+          age: {
+            ...table.schema.age,
+            visible: false,
+          },
+        },
+      })
+      const result = await search({
+        tableId: table._id!,
+        query: {},
+        fields: ["name", "age"],
+      })
+      expect(result.rows).toHaveLength(10)
+      for (const row of result.rows) {
+        const keys = Object.keys(row)
+        expect(keys).toContain("name")
+        expect(keys).not.toContain("age")
+        expect(keys).not.toContain("surname")
+        expect(keys).not.toContain("address")
+      }
+    })
+  })
 })
