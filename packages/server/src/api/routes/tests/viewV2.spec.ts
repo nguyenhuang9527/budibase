@@ -117,6 +117,7 @@ describe.each([
   })
 
   beforeEach(() => {
+    jest.clearAllMocks()
     mocks.licenses.useCloudFree()
   })
 
@@ -1600,7 +1601,7 @@ describe.each([
           expect(response.rows).toHaveLength(0)
         })
 
-      it("queries the row api passing the view fields only", async () => {
+      it.only("queries the row api passing the view fields only", async () => {
         const searchSpy = jest.spyOn(sdk.rows, "search")
 
         const view = await config.api.viewV2.create({
