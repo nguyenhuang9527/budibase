@@ -25,6 +25,7 @@ import { DatabaseName, getDatasource } from "../../../integrations/tests/utils"
 import merge from "lodash/merge"
 import { quotas } from "@budibase/pro"
 import { db, roles } from "@budibase/backend-core"
+import sdk from "../../../sdk"
 
 describe.each([
   ["lucene", undefined],
@@ -1619,7 +1620,7 @@ describe.each([
             fields: ["id"],
           })
         )
-        })
+      })
     })
 
     describe("permissions", () => {
